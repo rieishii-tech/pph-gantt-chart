@@ -54,6 +54,7 @@ body { font-family:'Segoe UI','Meiryo',sans-serif; background:#f5f7fa; color:#33
 .ic-start-tmr { background:#81c784; }
 .ic-naiji { background:#607d8b; }
 .ic-delivery { background:#795548; }
+.ic-updated { background:#ff5722; }
 /* stage tag colors */
 .st00{background:#f5f5f5;color:#9e9e9e}.st01{background:#e3f2fd;color:#1565c0}.st04{background:#fff3e0;color:#e65100}
 .st06{background:#e8f5e9;color:#2e7d32}.st08{background:#fff3e0;color:#e65100}.st09{background:#f3e5f5;color:#7b1fa2}
@@ -71,29 +72,32 @@ th { background:#e8eaf6; padding:3px 2px; font-size:10px; font-weight:600; borde
 th.mh { background:#c5cae9; font-size:11px; text-align:center; font-weight:700; }
 td { padding:2px 4px; border:1px solid #e0e0e0; font-size:11px; vertical-align:middle; }
 tr:nth-child(even) td { background:#fafafa; }
-tr:hover td { background:#e8eaf6 !important; }
+/* Hover: only sticky columns get background; date cells get top/bottom border highlight */
+tr:hover td:not(.dc) { background:#e8eaf6 !important; }
+tr:hover td.dc { box-shadow: inset 0 2px 0 #9fa8da, inset 0 -2px 0 #9fa8da; }
 
-/* ---- Sticky columns (7 cols) ---- */
-.col-name   { width:200px; min-width:200px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:0;   background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:11px; padding:3px 6px; }
-.col-pref   { width:56px;  min-width:56px;  max-width:56px;  white-space:nowrap; position:sticky; left:200px; background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:2px 3px; text-align:center; }
-.col-type   { width:56px;  min-width:56px;  max-width:56px;  white-space:nowrap; position:sticky; left:256px; background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:2px 3px; text-align:center; }
-.col-inv    { width:56px;  min-width:56px;  max-width:56px;  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:312px; background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:2px 3px; text-align:center; }
-.col-const  { width:56px;  min-width:56px;  max-width:56px;  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:368px; background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:2px 3px; text-align:center; }
-.col-stage  { width:110px; min-width:110px; max-width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:424px; background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:3px 4px; }
-.col-next   { width:120px; min-width:120px; max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:534px; background:#fff; z-index:5; border-right:2px solid #1a237e; font-size:10px; padding:3px 4px; }
+/* ---- Sticky columns (8 cols: name, pref, type, tmpsvy, survey, const, stage, next) ---- */
+.col-name    { width:200px; min-width:200px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:0;     background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:11px; padding:3px 6px; }
+.col-pref    { width:56px;  min-width:56px;  max-width:56px;  white-space:nowrap; position:sticky; left:200px;  background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:2px 3px; text-align:center; }
+.col-type    { width:56px;  min-width:56px;  max-width:56px;  white-space:nowrap; position:sticky; left:256px;  background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:2px 3px; text-align:center; }
+.col-tmpsvy  { width:70px;  min-width:70px;  max-width:70px;  white-space:nowrap; position:sticky; left:312px;  background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:2px 3px; text-align:center; }
+.col-survey  { width:70px;  min-width:70px;  max-width:70px;  white-space:nowrap; position:sticky; left:382px;  background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:2px 3px; text-align:center; }
+.col-const   { width:56px;  min-width:56px;  max-width:56px;  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:452px;  background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:2px 3px; text-align:center; }
+.col-stage   { width:110px; min-width:110px; max-width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:508px;  background:#fff; z-index:5; border-right:1px solid #c5cae9; font-size:10px; padding:3px 4px; }
+.col-next    { width:120px; min-width:120px; max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:618px;  background:#fff; z-index:5; border-right:2px solid #1a237e; font-size:10px; padding:3px 4px; }
 
 /* Header sticky cells: need higher z-index for both top+left */
 thead th.col-name, thead th.col-pref, thead th.col-type,
-thead th.col-inv, thead th.col-const,
+thead th.col-tmpsvy, thead th.col-survey, thead th.col-const,
 thead th.col-stage, thead th.col-next { z-index:30; background:#e8eaf6; }
 
 /* Even row backgrounds for sticky cols */
 tr:nth-child(even) .col-name, tr:nth-child(even) .col-pref, tr:nth-child(even) .col-type,
-tr:nth-child(even) .col-inv, tr:nth-child(even) .col-const,
+tr:nth-child(even) .col-tmpsvy, tr:nth-child(even) .col-survey, tr:nth-child(even) .col-const,
 tr:nth-child(even) .col-stage, tr:nth-child(even) .col-next { background:#fafafa; }
-/* Hover */
+/* Hover for sticky cols */
 tr:hover .col-name, tr:hover .col-pref, tr:hover .col-type,
-tr:hover .col-inv, tr:hover .col-const,
+tr:hover .col-tmpsvy, tr:hover .col-survey, tr:hover .col-const,
 tr:hover .col-stage, tr:hover .col-next { background:#e8eaf6 !important; }
 
 /* Header row sticky top */
@@ -101,7 +105,7 @@ thead tr:first-child th { position:sticky; top:0; z-index:20; }
 thead tr:nth-child(2) th { position:sticky; top:26px; z-index:20; }
 /* Header sticky cols override: top + left = highest z */
 thead tr:first-child th.col-name, thead tr:first-child th.col-pref, thead tr:first-child th.col-type,
-thead tr:first-child th.col-inv, thead tr:first-child th.col-const,
+thead tr:first-child th.col-tmpsvy, thead tr:first-child th.col-survey, thead tr:first-child th.col-const,
 thead tr:first-child th.col-stage, thead tr:first-child th.col-next { z-index:40; }
 
 .nx-wait { color:#1565c0; font-weight:600; }
@@ -110,9 +114,9 @@ thead tr:first-child th.col-stage, thead tr:first-child th.col-next { z-index:40
 /* Date cells */
 .dc { width:24px; min-width:24px; max-width:24px; height:26px; padding:0; text-align:center; font-size:9px; }
 .tl { background:rgba(255,0,0,0.15) !important; border-left:2px solid #f44336 !important; border-right:2px solid #f44336 !important; }
-.sat { background:#e3f2fd; }
+.dc.sat { background:#e3f2fd !important; }
 .sat-head { background:#bbdefb !important; color:#1565c0; font-weight:700; }
-.sun { background:#ffebee; }
+.dc.sun { background:#ffebee !important; }
 .sun-head { background:#ffcdd2 !important; color:#c62828; font-weight:700; }
 
 .legend { display:flex; gap:12px; padding:6px 24px; background:#fff; border-top:1px solid #e0e0e0; flex-wrap:wrap; align-items:center; font-size:11px; }
@@ -129,6 +133,8 @@ th.sort-desc::after { content:' \u25bc'; font-size:8px; }
 
 .has-user { color:#1565c0; font-weight:600; }
 .no-user { color:#bbb; }
+.date-val { color:#333; font-weight:500; }
+.date-empty { color:#ccc; }
 </style>
 </head>
 <body>
@@ -169,10 +175,6 @@ th.sort-desc::after { content:' \u25bc'; font-size:8px; }
   <select id="pff" onchange="render()"><option value="all" selected>全て</option></select>
   <label>事業区分:</label>
   <select id="ctf" onchange="render()"><option value="all" selected>全て</option></select>
-  <label>現調者:</label>
-  <select id="ivf" onchange="render()">
-    <option value="all" selected>全て</option><option value="set">設定あり</option><option value="none">未設定</option>
-  </select>
   <label>施工担当:</label>
   <select id="cuf" onchange="render()">
     <option value="all" selected>全て</option><option value="set">設定あり</option><option value="none">未設定</option>
@@ -235,6 +237,7 @@ function isHol(d){
 }
 function pd(s){if(!s||s==='null')return null;const d=new Date(s+'T00:00:00');return isNaN(d)?null:d;}
 function fd(d){return d?(d.getMonth()+1)+'/'+d.getDate():'-';}
+function fds(s){if(!s)return'';const p=s.split('-');if(p.length<3)return s;return parseInt(p[1])+'/'+parseInt(p[2]);}
 function esc(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function sc(s){
   if(!s)return'';
@@ -278,11 +281,12 @@ function buildTodayDash(){
 
   const cats = ['仮現調','本現調','内示','納品','停電','完工検査',
     '着工予定（本日）','施工中',
-    '開通予定（本日）','開通予定（明日）'];
+    '開通予定（本日）','開通予定（明日）','本日更新'];
   let todayItems = {};
   cats.forEach(c => { todayItems[c] = []; });
 
   let totalCount = 0;
+  const updatedIds = new Set();
   D.forEach(r => {
     const stg = r.StageName || '';
     events.forEach(e => {
@@ -312,6 +316,13 @@ function buildTodayDash(){
         totalCount++;
       }
     }
+    // Check if record was modified today (LastModifiedDate starts with todayStr)
+    const lmd = r.LastModifiedDate || '';
+    if(lmd && lmd.substring(0,10) === todayStr){
+      todayItems['本日更新'].push(r);
+      updatedIds.add(r.Id);
+      totalCount++;
+    }
   });
 
   document.getElementById('todayCount').textContent = totalCount + '件';
@@ -330,6 +341,7 @@ function buildTodayDash(){
     {label:'完工検査', icon:'検', icCls:'ic-kanko'},
     {label:'納品',   icon:'納', icCls:'ic-delivery'},
     {label:'内示',   icon:'示', icCls:'ic-naiji'},
+    {label:'本日更新', icon:'更', icCls:'ic-updated'},
   ];
 
   let hasAny = false;
@@ -400,7 +412,6 @@ function render(){
   const pf=document.getElementById('pf').value;
   const pfv=document.getElementById('pff').value;
   const ctv=document.getElementById('ctf').value;
-  const ivv=document.getElementById('ivf').value;
   const cuv=document.getElementById('cuf').value;
 
   let f=D.filter(r=>{
@@ -409,8 +420,6 @@ function render(){
     if(sf!=='all'){if(sf==='const'){if(!s.startsWith('08')&&!s.startsWith('09'))return false;}else if(!s.startsWith(sf))return false;}
     if(pfv!=='all'&&(r.Prefecture||'')!==pfv)return false;
     if(ctv!=='all'&&(r.ConstractType__c||'')!==ctv)return false;
-    if(ivv==='set'&&!r.InvestigationUserName)return false;
-    if(ivv==='none'&&r.InvestigationUserName)return false;
     if(cuv==='set'&&!r.ConstUserName)return false;
     if(cuv==='none'&&r.ConstUserName)return false;
     return true;
@@ -422,7 +431,8 @@ function render(){
       if(sortCol==='name'){va=a.Name||'';vb=b.Name||'';}
       else if(sortCol==='pref'){va=a.Prefecture||'\uff9d';vb=b.Prefecture||'\uff9d';}
       else if(sortCol==='type'){va=a.ConstractType__c||'\uff9d';vb=b.ConstractType__c||'\uff9d';}
-      else if(sortCol==='inv'){va=a.InvestigationUserName||'\uff9d';vb=b.InvestigationUserName||'\uff9d';}
+      else if(sortCol==='tmpsvy'){va=a.TempSurveyDate__c||'9999';vb=b.TempSurveyDate__c||'9999';}
+      else if(sortCol==='survey'){va=a.SurveyDate__c||'9999';vb=b.SurveyDate__c||'9999';}
       else if(sortCol==='const'){va=a.ConstUserName||'\uff9d';vb=b.ConstUserName||'\uff9d';}
       else if(sortCol==='stage'){va=a.StageName||'';vb=b.StageName||'';}
       else if(sortCol==='next'){
@@ -457,9 +467,9 @@ function render(){
   while(cd<=ed){const m=cd.getFullYear()*100+cd.getMonth();if(m!==cm){if(cm!==-1)mons.push({m:cm,d:md});cm=m;md=0;}md++;cd.setDate(cd.getDate()+1);}
   if(md>0)mons.push({m:cm,d:md});
 
-  const scs=['name','pref','type','inv','const','stage','next'];
-  const scl=['商談名','県','区分','現調者','施工担当','ステータス','次の予定'];
-  const scc=['col-name','col-pref','col-type','col-inv','col-const','col-stage','col-next'];
+  const scs=['name','pref','type','tmpsvy','survey','const','stage','next'];
+  const scl=['商談名','県','区分','仮現調日','本現調日','施工担当','ステータス','次の予定'];
+  const scc=['col-name','col-pref','col-type','col-tmpsvy','col-survey','col-const','col-stage','col-next'];
   let mr='<tr>';
   for(let i=0;i<scs.length;i++){
     let cls=scc[i]+' sortable';
@@ -495,16 +505,17 @@ function render(){
 
     const pref=r.Prefecture||'-';
     const ctype=r.ConstractType__c||'-';
-    const invName=r.InvestigationUserName||'';
     const constName=r.ConstUserName||'';
-    const invCls=invName?'has-user':'no-user';
     const constCls=constName?'has-user':'no-user';
+    const tmpSvyStr=r.TempSurveyDate__c||'';
+    const svyStr=r.SurveyDate__c||'';
 
     tb+='<tr>';
     tb+='<td class="col-name" title="'+esc(r.Name)+'">'+esc(r.Name)+'</td>';
     tb+='<td class="col-pref">'+esc(pref)+'</td>';
     tb+='<td class="col-type">'+esc(ctype)+'</td>';
-    tb+='<td class="col-inv '+invCls+'" title="'+esc(invName||'未設定')+'">'+(invName?esc(invName):'-')+'</td>';
+    tb+='<td class="col-tmpsvy '+(tmpSvyStr?'date-val':'date-empty')+'" title="'+(tmpSvyStr||'未設定')+'">'+(tmpSvyStr?fds(tmpSvyStr):'-')+'</td>';
+    tb+='<td class="col-survey '+(svyStr?'date-val':'date-empty')+'" title="'+(svyStr||'未設定')+'">'+(svyStr?fds(svyStr):'-')+'</td>';
     tb+='<td class="col-const '+constCls+'" title="'+esc(constName||'未設定')+'">'+(constName?esc(constName):'-')+'</td>';
     tb+='<td class="col-stage '+sc(r.StageName)+'">'+(r.StageName||'')+'</td>';
     tb+='<td class="'+nxC+'" title="'+(nxEv?nxEv.label+'待ち '+fd(nxEv.date):'予定なし')+'">'+nxH+'</td>';

@@ -14,12 +14,7 @@ from firebase_admin import credentials, db
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SERVICE_ACCOUNT_KEY = os.path.join(SCRIPT_DIR, 'serviceAccountKey.json')
 DATABASE_URL = 'https://pph-gantt-chart-default-rtdb.asia-southeast1.firebasedatabase.app'
-DATA_FILE = os.path.join(
-    os.path.expanduser('~'), '.claude', 'projects',
-    'C--Users------Desktop-Claude-Code-Demo',
-    '370f5140-6c9c-4df8-88af-62792628b142', 'tool-results',
-    'pph_data_v4_full.json'
-)
+DATA_FILE = os.path.join(SCRIPT_DIR, 'pph_data_v5.json')
 
 def main():
     # データ読み込み
