@@ -1,0 +1,6 @@
+serviceAccountKey.json
+*.pyc
+__pycache__/
+pph_data_v4_full.json
+pph_gantt_chart.html
+.env
