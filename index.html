@@ -319,7 +319,7 @@ function buildTodayDash(){
     }
     // Check if record was modified today (LastModifiedDate starts with todayStr)
     const lmd = r.LastModifiedDate || '';
-    if(lmd && lmd.substring(0,10) === todayStr){
+    if(lmd && lmd.substring(0,10) === todayStr && stg >= '07'){
       todayItems['本日更新'].push(r);
       updatedIds.add(r.Id);
       totalCount++;
