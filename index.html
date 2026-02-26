@@ -282,12 +282,18 @@ function buildTodayDash(){
 
   const cats = ['仮現調','本現調','内示','納品','停電','完工検査',
     '着工予定（本日）','施工中',
-    '開通予定（本日）','開通予定（明日）','本日更新'];
+    '開通予定（本日）','開通予定（明日）','本日の予定'];
   let todayItems = {};
   cats.forEach(c => { todayItems[c] = []; });
 
+  // All date fields to check for "本日の予定"
+  const allDateFields = [
+    {f:'Naijibi__c',l:'内示'},{f:'TempSurveyDate__c',l:'仮現調'},{f:'SurveyDate__c',l:'本現調'},
+    {f:'Field27__c',l:'納品'},{f:'KojiSekouyoteibi__c',l:'着工'},{f:'ScheduleOfBlackoutDates__c',l:'停電'},
+    {f:'KojiKankobi__c',l:'完工検査'},{f:'Kankobi__c',l:'完工'},{f:'StartDate__c',l:'稼働開始'}
+  ];
+
   let totalCount = 0;
-  const updatedIds = new Set();
   D.forEach(r => {
     const stg = r.StageName || '';
     events.forEach(e => {
@@ -317,11 +323,15 @@ function buildTodayDash(){
         totalCount++;
       }
     }
-    // Check if record was modified today (LastModifiedDate starts with todayStr)
-    const lmd = r.LastModifiedDate || '';
-    if(lmd && lmd.substring(0,10) === todayStr && stg >= '07'){
-      todayItems['本日更新'].push(r);
-      updatedIds.add(r.Id);
+    // Check all date fields for today's date
+    const todayLabels = [];
+    allDateFields.forEach(df => {
+      const v = r[df.f];
+      if(v && v === todayStr) todayLabels.push(df.l);
+    });
+    if(todayLabels.length > 0){
+      r._todayLabels = todayLabels;
+      todayItems['本日の予定'].push(r);
       totalCount++;
     }
   });
@@ -342,7 +352,7 @@ function buildTodayDash(){
     {label:'完工検査', icon:'検', icCls:'ic-kanko'},
     {label:'納品',   icon:'納', icCls:'ic-delivery'},
     {label:'内示',   icon:'示', icCls:'ic-naiji'},
-    {label:'本日更新', icon:'更', icCls:'ic-updated'},
+    {label:'本日の予定', icon:'今', icCls:'ic-updated'},
   ];
 
   let hasAny = false;
@@ -364,7 +374,9 @@ function buildTodayDash(){
       html += '<li>';
       if(pref) html += '<span class="pref-tag">'+esc(pref)+'</span>';
       html += '<span class="opp-name" title="'+esc(r.Name)+'">'+esc(r.Name)+'</span>';
-      if(e.label === '施工中' && kankoD){
+      if(e.label === '本日の予定' && r._todayLabels){
+        html += '<span style="font-size:9px;color:#ff5722;margin-left:auto;white-space:nowrap;font-weight:600;">'+r._todayLabels.join(', ')+'</span>';
+      } else if(e.label === '施工中' && kankoD){
         html += '<span style="font-size:9px;color:#2e7d32;margin-left:auto;white-space:nowrap;">完工:'+fd(kankoD)+'</span>';
       } else if(e.label.includes('着工') && kankoD){
         html += '<span style="font-size:9px;color:#2e7d32;margin-left:auto;white-space:nowrap;">完工:'+fd(kankoD)+'</span>';
