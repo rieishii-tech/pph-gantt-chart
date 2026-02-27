@@ -25,6 +25,11 @@ body { font-family:'Segoe UI','Meiryo',sans-serif; background:#f5f7fa; color:#33
 .header { background:linear-gradient(135deg,#1a237e,#283593); color:#fff; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:200; }
 .header h1 { font-size:18px; font-weight:600; }
 .header .info { font-size:13px; opacity:0.85; }
+.refresh-btn { background:#fff; color:#1a237e; border:none; border-radius:4px; padding:6px 14px; font-size:12px; font-weight:600; cursor:pointer; margin-left:12px; transition:all 0.2s; }
+.refresh-btn:hover { background:#c5cae9; }
+.refresh-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.refresh-btn .spin { display:inline-block; animation:spin 1s linear infinite; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
 /* === Today Dashboard === */
 .today-dash { background:#fff; border-bottom:2px solid #1a237e; padding:10px 24px; position:sticky; top:48px; z-index:190; }
@@ -169,7 +174,9 @@ th.sort-desc::after { content:' \u25bc'; font-size:8px; }
 
 <div class="header">
   <h1>PPH商談 ガントチャート（進行中案件）</h1>
-  <div class="info">最終更新: <span id="ut"></span> | 全データ: <span id="tc"></span>件</div>
+  <div class="info">最終更新: <span id="ut"></span> | 全データ: <span id="tc"></span>件
+    <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">&#x21BB; データ更新</button>
+  </div>
 </div>
 
 <!-- ===== Today Dashboard ===== -->
@@ -671,53 +678,69 @@ function render(){
   },100);
 }
 
-// ===== Init: Fetch data from Firebase =====
+// ===== Fetch data from Firebase =====
+async function fetchFirebaseData(){
+  const [dataRes, metaRes] = await Promise.all([
+    fetch(FIREBASE_DB_URL + '/pph_data.json'),
+    fetch(FIREBASE_DB_URL + '/metadata.json')
+  ]);
+  if(!dataRes.ok) throw new Error('データ取得に失敗しました (status: ' + dataRes.status + ')');
+  const rawData = await dataRes.json();
+  if(!rawData) throw new Error('データが空です。');
+  D = Array.isArray(rawData) ? rawData : Object.values(rawData);
+  document.getElementById('tc').textContent = D.length;
+  if(metaRes.ok){
+    const meta = await metaRes.json();
+    if(meta && meta.lastUpdated) document.getElementById('ut').textContent = meta.lastUpdated;
+    else document.getElementById('ut').textContent = new Date().toLocaleString('ja-JP');
+  } else {
+    document.getElementById('ut').textContent = new Date().toLocaleString('ja-JP');
+  }
+}
+
+function resetFilters(){
+  const pfSel=document.getElementById('pff');
+  while(pfSel.options.length>1) pfSel.remove(1);
+  document.getElementById('ctPanel').innerHTML='';
+  const cuSel=document.getElementById('cuf');
+  while(cuSel.options.length>2) cuSel.remove(2);
+  selCTypes.clear();
+  document.getElementById('ctBtn').textContent='全て';
+}
+
+// ===== Refresh: re-fetch from Firebase =====
+async function refreshData(){
+  const btn=document.getElementById('refreshBtn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin">&#x21BB;</span> 更新中...';
+  try{
+    await fetchFirebaseData();
+    resetFilters();
+    populateFilters();
+    buildTodayDash();
+    render();
+    btn.innerHTML='&#x2713; 更新完了';
+    setTimeout(()=>{btn.innerHTML='&#x21BB; データ更新';btn.disabled=false;},2000);
+  }catch(e){
+    btn.innerHTML='&#x26A0; 失敗';
+    setTimeout(()=>{btn.innerHTML='&#x21BB; データ更新';btn.disabled=false;},3000);
+    alert('データ更新に失敗しました: '+e.message);
+  }
+}
+
+// ===== Init =====
 async function initApp(){
   try {
-    // Fetch data and metadata in parallel
-    const [dataRes, metaRes] = await Promise.all([
-      fetch(FIREBASE_DB_URL + '/pph_data.json'),
-      fetch(FIREBASE_DB_URL + '/metadata.json')
-    ]);
-
-    if(!dataRes.ok) throw new Error('データ取得に失敗しました (status: ' + dataRes.status + ')');
-
-    const rawData = await dataRes.json();
-    if(!rawData){
-      throw new Error('データが空です。upload_to_firebase.py でデータをアップロードしてください。');
-    }
-
-    // Firebase returns object with numeric keys for arrays, or actual array
-    D = Array.isArray(rawData) ? rawData : Object.values(rawData);
-
-    // Update header info
-    document.getElementById('tc').textContent = D.length;
-
-    // Show last updated from metadata, fallback to current time
-    if(metaRes.ok){
-      const meta = await metaRes.json();
-      if(meta && meta.lastUpdated){
-        document.getElementById('ut').textContent = meta.lastUpdated;
-      } else {
-        document.getElementById('ut').textContent = new Date().toLocaleString('ja-JP');
-      }
-    } else {
-      document.getElementById('ut').textContent = new Date().toLocaleString('ja-JP');
-    }
-
-    // Build dashboard and filters, then render
+    await fetchFirebaseData();
     buildTodayDash();
     populateFilters();
     render();
-
   } catch(err) {
     document.getElementById('loading-overlay').innerHTML =
       '<p style="color:#c62828;font-size:16px;">&#x26A0; エラー: ' + err.message + '</p>' +
       '<p style="margin-top:8px;font-size:13px;color:#666;">ページを再読み込みするか、管理者に連絡してください。</p>';
     return;
   }
-
-  // Hide loading overlay
   document.getElementById('loading-overlay').style.display = 'none';
 }
 
