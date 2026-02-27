@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>PPH商談 ガントチャート</title>
+<!-- Firebase JS SDK (compat) for Realtime Database -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Segoe UI','Meiryo',sans-serif; background:#f5f7fa; color:#333; }
@@ -250,7 +253,10 @@ th.sort-desc::after { content:' \u25bc'; font-size:8px; }
 
 <script>
 // Firebase Realtime Database URL
+// ===== Firebase 初期化 (ガイド Section 4 相当) =====
 const FIREBASE_DB_URL = 'https://pph-gantt-chart-default-rtdb.asia-southeast1.firebasedatabase.app';
+firebase.initializeApp({ databaseURL: FIREBASE_DB_URL });
+const fbDb = firebase.database();
 
 let D = [];
 const NOW = new Date(); NOW.setHours(0,0,0,0);
@@ -678,26 +684,7 @@ function render(){
   },100);
 }
 
-// ===== Fetch data from Firebase =====
-async function fetchFirebaseData(){
-  const [dataRes, metaRes] = await Promise.all([
-    fetch(FIREBASE_DB_URL + '/pph_data.json'),
-    fetch(FIREBASE_DB_URL + '/metadata.json')
-  ]);
-  if(!dataRes.ok) throw new Error('データ取得に失敗しました (status: ' + dataRes.status + ')');
-  const rawData = await dataRes.json();
-  if(!rawData) throw new Error('データが空です。');
-  D = Array.isArray(rawData) ? rawData : Object.values(rawData);
-  document.getElementById('tc').textContent = D.length;
-  if(metaRes.ok){
-    const meta = await metaRes.json();
-    if(meta && meta.lastUpdated) document.getElementById('ut').textContent = meta.lastUpdated;
-    else document.getElementById('ut').textContent = new Date().toLocaleString('ja-JP');
-  } else {
-    document.getElementById('ut').textContent = new Date().toLocaleString('ja-JP');
-  }
-}
-
+// ===== Filter reset =====
 function resetFilters(){
   const pfSel=document.getElementById('pff');
   while(pfSel.options.length>1) pfSel.remove(1);
@@ -708,40 +695,102 @@ function resetFilters(){
   document.getElementById('ctBtn').textContent='全て';
 }
 
-// ===== Refresh: re-fetch from Firebase =====
-async function refreshData(){
+// ===== UI更新処理 =====
+let lastKnownUpdate='';
+let initialLoadDone=false;
+
+function applyDataToUI(val){
+  if(!val||!val.pph_data) return;
+  D=Array.isArray(val.pph_data)?val.pph_data:Object.values(val.pph_data);
+  document.getElementById('tc').textContent=D.length;
+  const meta=val.metadata||{};
+  if(meta.lastUpdated){
+    document.getElementById('ut').textContent=meta.lastUpdated;
+  } else {
+    document.getElementById('ut').textContent=new Date().toLocaleString('ja-JP');
+  }
+  resetFilters();
+  populateFilters();
+  buildTodayDash();
+  render();
+}
+
+// ===== リアルタイムリスナー (ガイド Section 5 — onSnapshot相当) =====
+// Firebase Realtime Database の onValue は Firestore の onSnapshot と同じ役割。
+// データが変わるたびに callback が全クライアントで自動発火する。
+let unsubscribe=null;
+
+function subscribeToData(callback){
+  const rootRef=fbDb.ref('/');
+  rootRef.on('value',function(snapshot){
+    const val=snapshot.val();
+    callback(val);
+  },function(err){
+    console.error('Firebase listener error:',err);
+  });
+  // 解除関数を返す（ガイド Section 6 の cleanup パターン）
+  return function(){ rootRef.off('value'); };
+}
+
+// ===== 同期通知 =====
+function showSyncNotice(){
+  let el=document.getElementById('syncNotice');
+  if(!el){
+    el=document.createElement('div');
+    el.id='syncNotice';
+    el.style.cssText='position:fixed;bottom:20px;right:20px;background:#1a237e;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;box-shadow:0 2px 12px rgba(0,0,0,0.3);';
+    document.body.appendChild(el);
+  }
+  el.textContent='\u2714 \u30c7\u30fc\u30bf\u304c\u66f4\u65b0\u3055\u308c\u307e\u3057\u305f';
+  el.style.opacity='1';
+  setTimeout(function(){el.style.opacity='0';},3000);
+}
+
+// ===== 手動リフレッシュ（ボタン） =====
+function refreshData(){
   const btn=document.getElementById('refreshBtn');
   btn.disabled=true;
   btn.innerHTML='<span class="spin">&#x21BB;</span> 更新中...';
-  try{
-    await fetchFirebaseData();
-    resetFilters();
-    populateFilters();
-    buildTodayDash();
-    render();
+  // リスナー再接続で最新データを強制取得
+  if(unsubscribe){unsubscribe();unsubscribe=null;}
+  unsubscribe=subscribeToData(function(val){
+    if(!val||!val.pph_data){
+      btn.innerHTML='&#x26A0; 失敗';
+      setTimeout(function(){btn.innerHTML='&#x21BB; データ更新';btn.disabled=false;},3000);
+      return;
+    }
+    applyDataToUI(val);
+    const newTs=(val.metadata&&val.metadata.lastUpdated)||'';
+    lastKnownUpdate=newTs;
     btn.innerHTML='&#x2713; 更新完了';
-    setTimeout(()=>{btn.innerHTML='&#x21BB; データ更新';btn.disabled=false;},2000);
-  }catch(e){
-    btn.innerHTML='&#x26A0; 失敗';
-    setTimeout(()=>{btn.innerHTML='&#x21BB; データ更新';btn.disabled=false;},3000);
-    alert('データ更新に失敗しました: '+e.message);
-  }
+    setTimeout(function(){btn.innerHTML='&#x21BB; データ更新';btn.disabled=false;},2000);
+  });
 }
 
-// ===== Init =====
-async function initApp(){
-  try {
-    await fetchFirebaseData();
-    buildTodayDash();
-    populateFilters();
-    render();
-  } catch(err) {
-    document.getElementById('loading-overlay').innerHTML =
-      '<p style="color:#c62828;font-size:16px;">&#x26A0; エラー: ' + err.message + '</p>' +
-      '<p style="margin-top:8px;font-size:13px;color:#666;">ページを再読み込みするか、管理者に連絡してください。</p>';
-    return;
-  }
-  document.getElementById('loading-overlay').style.display = 'none';
+// ===== Init (ガイド Section 6 — 起動時フロー) =====
+// リスナー登録 → データ受信 → UI反映 → 以降は自動同期
+function initApp(){
+  unsubscribe=subscribeToData(function(val){
+    if(!val||!val.pph_data){
+      if(!initialLoadDone){
+        document.getElementById('loading-overlay').innerHTML=
+          '<p style="color:#c62828;font-size:16px;">&#x26A0; エラー: データが空です。</p>'+
+          '<p style="margin-top:8px;font-size:13px;color:#666;">ページを再読み込みするか、管理者に連絡してください。</p>';
+      }
+      return;
+    }
+    applyDataToUI(val);
+    const newTs=(val.metadata&&val.metadata.lastUpdated)||'';
+    if(initialLoadDone&&newTs!==lastKnownUpdate){
+      // 他ユーザーによる更新を検知 → トースト通知
+      showSyncNotice();
+    }
+    lastKnownUpdate=newTs;
+    if(!initialLoadDone){
+      initialLoadDone=true;
+      document.getElementById('loading-overlay').style.display='none';
+    }
+  });
 }
 
 initApp();
