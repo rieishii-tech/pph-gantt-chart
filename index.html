@@ -203,7 +203,7 @@ th.sort-desc::after { content:' \u25bc'; font-size:8px; }
   </div>
   <label>施工担当:</label>
   <select id="cuf" onchange="render()">
-    <option value="all" selected>全て</option><option value="set">設定あり</option><option value="none">未設定</option>
+    <option value="all" selected>全て</option><option value="none">未設定</option>
   </select>
   <label>検索:</label>
   <input type="text" id="si" placeholder="商談名..." style="width:140px;" oninput="render()">
@@ -430,12 +430,14 @@ function toggleDash(){
 
 // ===== Filters =====
 function populateFilters(){
-  const prefSet=new Set(), ctSet=new Set();
-  D.forEach(r=>{if(r.Prefecture)prefSet.add(r.Prefecture);if(r.ConstractType__c)ctSet.add(r.ConstractType__c);});
+  const prefSet=new Set(), ctSet=new Set(), cuSet=new Set();
+  D.forEach(r=>{if(r.Prefecture)prefSet.add(r.Prefecture);if(r.ConstractType__c)ctSet.add(r.ConstractType__c);if(r.ConstUserName)cuSet.add(r.ConstUserName);});
   const pfSel=document.getElementById('pff');
   [...prefSet].sort().forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;pfSel.appendChild(o);});
   const ctPanel=document.getElementById('ctPanel');
   [...ctSet].sort().forEach(c=>{const lbl=document.createElement('label');lbl.innerHTML='<input type="checkbox" value="'+c+'" onchange="onCTypeChk()">'+c;ctPanel.appendChild(lbl);});
+  const cuSel=document.getElementById('cuf');
+  [...cuSet].sort((a,b)=>a.localeCompare(b,'ja')).forEach(u=>{const o=document.createElement('option');o.value=u;o.textContent=u;cuSel.appendChild(o);});
 }
 
 let sortCol='',sortDir='asc';
@@ -519,8 +521,8 @@ function render(){
     if(selStages.size>0){let match=false;for(const st of selStages){if(s.startsWith(st)){match=true;break;}}if(!match)return false;}
     if(pfv!=='all'&&(r.Prefecture||'')!==pfv)return false;
     if(selCTypes.size>0&&!selCTypes.has(r.ConstractType__c||''))return false;
-    if(cuv==='set'&&!r.ConstUserName)return false;
     if(cuv==='none'&&r.ConstUserName)return false;
+    if(cuv!=='all'&&cuv!=='none'&&(r.ConstUserName||'')!==cuv)return false;
     if(activeEvs.size>0&&!hasActiveEvent(r))return false;
     return true;
   });
