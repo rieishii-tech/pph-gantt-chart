@@ -66,6 +66,22 @@ body { font-family:'Segoe UI','Meiryo',sans-serif; background:#f5f7fa; color:#33
 .controls select, .controls input { padding:4px 8px; border:1px solid #ccc; border-radius:4px; font-size:12px; }
 .fc { font-size:13px; color:#1a237e; font-weight:700; margin-left:12px; }
 
+/* Multi-select dropdown */
+.ms-wrap { position:relative; display:inline-block; }
+.ms-btn { padding:4px 8px; border:1px solid #ccc; border-radius:4px; font-size:12px; background:#fff; cursor:pointer; min-width:160px; text-align:left; white-space:nowrap; }
+.ms-btn::after { content:'\25BC'; float:right; font-size:9px; margin-left:8px; color:#888; }
+.ms-panel { position:absolute; top:100%; left:0; background:#fff; border:1px solid #ccc; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.15); z-index:300; min-width:220px; max-height:300px; overflow-y:auto; display:none; }
+.ms-panel.open { display:block; }
+.ms-panel label { display:flex; align-items:center; gap:6px; padding:5px 10px; font-size:12px; cursor:pointer; white-space:nowrap; }
+.ms-panel label:hover { background:#e8eaf6; }
+.ms-panel hr { border:none; border-top:1px solid #e0e0e0; margin:2px 0; }
+
+/* Clickable legend filters */
+.legend-item.flt { cursor:pointer; padding:3px 6px; border-radius:4px; border:2px solid transparent; transition:all 0.15s; user-select:none; }
+.legend-item.flt:hover { background:#e8eaf6; }
+.legend-item.flt.on { border-color:#1a237e; background:#e8eaf6; }
+.legend-item.flt.off { opacity:0.35; }
+
 /* === Gantt Table === */
 .gantt-wrapper { overflow:auto; max-height:calc(100vh - 100px); position:relative; }
 table { border-collapse:separate; border-spacing:0; }
@@ -163,15 +179,21 @@ th.sort-desc::after { content:' \u25bc'; font-size:8px; }
 
 <div class="controls" id="ctrlBar">
   <label>ステータス:</label>
-  <select id="sf" onchange="render()">
-    <option value="all" selected>全て</option>
-    <option value="const">施工以降（08-09）</option>
-    <option value="00">00_潜在案件</option><option value="01">01_見極め</option>
-    <option value="02">02_メリット訴求</option><option value="03">03_提案実施</option>
-    <option value="04">04_意思決定者の賛同</option><option value="05">05_リスク排除</option>
-    <option value="06">06_内示</option><option value="07">07_契約締結</option>
-    <option value="08">08_施工中</option><option value="09">09_完工検査</option>
-  </select>
+  <div class="ms-wrap" id="sfWrap">
+    <div class="ms-btn" id="sfBtn" onclick="document.getElementById('sfPanel').classList.toggle('open')">全て</div>
+    <div class="ms-panel" id="sfPanel">
+      <label><input type="checkbox" value="00" onchange="onStageChk()">00_潜在案件</label>
+      <label><input type="checkbox" value="01" onchange="onStageChk()">01_見極め</label>
+      <label><input type="checkbox" value="02" onchange="onStageChk()">02_メリット訴求</label>
+      <label><input type="checkbox" value="03" onchange="onStageChk()">03_提案実施</label>
+      <label><input type="checkbox" value="04" onchange="onStageChk()">04_意思決定者の賛同</label>
+      <label><input type="checkbox" value="05" onchange="onStageChk()">05_リスク排除</label>
+      <label><input type="checkbox" value="06" onchange="onStageChk()">06_内示</label>
+      <label><input type="checkbox" value="07" onchange="onStageChk()">07_契約締結</label>
+      <label><input type="checkbox" value="08" onchange="onStageChk()">08_施工中</label>
+      <label><input type="checkbox" value="09" onchange="onStageChk()">09_完工検査</label>
+    </div>
+  </div>
   <label>都道府県:</label>
   <select id="pff" onchange="render()"><option value="all" selected>全て</option></select>
   <label>事業区分:</label>
@@ -189,15 +211,16 @@ th.sort-desc::after { content:' \u25bc'; font-size:8px; }
   </select>
   <span class="fc" id="fc"></span>
 </div>
-<div class="legend">
-  <div class="legend-item"><div class="legend-color" style="background:#607d8b"></div>内示</div>
-  <div class="legend-item"><div class="legend-color" style="background:#b3e5fc;border:1px solid #4fc3f7"></div>仮現調</div>
-  <div class="legend-item"><div class="legend-color" style="background:#4fc3f7"></div>本現調</div>
-  <div class="legend-item"><div class="legend-color" style="background:#795548"></div>納品</div>
-  <div class="legend-item"><div class="legend-color" style="background:#ff9800"></div>着工〜完工</div>
-  <div class="legend-item"><div class="legend-color" style="background:#f44336"></div>停電</div>
-  <div class="legend-item"><div class="legend-color" style="background:#ab47bc"></div>完工検査</div>
-  <div class="legend-item"><div class="legend-color" style="background:#4caf50"></div>稼働開始</div>
+<div class="legend" id="legendBar">
+  <span style="font-size:10px;color:#888;margin-right:2px;">▼絞込:</span>
+  <div class="legend-item flt" data-ev="naiji" onclick="toggleEv(this)"><div class="legend-color" style="background:#607d8b"></div>内示</div>
+  <div class="legend-item flt" data-ev="tmpsvy" onclick="toggleEv(this)"><div class="legend-color" style="background:#b3e5fc;border:1px solid #4fc3f7"></div>仮現調</div>
+  <div class="legend-item flt" data-ev="survey" onclick="toggleEv(this)"><div class="legend-color" style="background:#4fc3f7"></div>本現調</div>
+  <div class="legend-item flt" data-ev="delivery" onclick="toggleEv(this)"><div class="legend-color" style="background:#795548"></div>納品</div>
+  <div class="legend-item flt" data-ev="koji" onclick="toggleEv(this)"><div class="legend-color" style="background:#ff9800"></div>着工〜完工</div>
+  <div class="legend-item flt" data-ev="blackout" onclick="toggleEv(this)"><div class="legend-color" style="background:#f44336"></div>停電</div>
+  <div class="legend-item flt" data-ev="kanko" onclick="toggleEv(this)"><div class="legend-color" style="background:#ab47bc"></div>完工検査</div>
+  <div class="legend-item flt" data-ev="start" onclick="toggleEv(this)"><div class="legend-color" style="background:#4caf50"></div>稼働開始</div>
   <div class="legend-item" style="border-left:1px solid #ccc;padding-left:10px;margin-left:6px;">
     ■確定 / <span style="opacity:0.5;">□予定</span>
   </div>
@@ -419,8 +442,55 @@ function toggleSort(col){
   render();
 }
 
+// === Multi-select stage filter ===
+let selStages=new Set(); // empty = all
+function onStageChk(){
+  const cbs=document.querySelectorAll('#sfPanel input[type=checkbox]');
+  selStages.clear();
+  cbs.forEach(cb=>{if(cb.checked)selStages.add(cb.value);});
+  const btn=document.getElementById('sfBtn');
+  if(selStages.size===0) btn.textContent='全て';
+  else if(selStages.size<=3) btn.textContent=[...selStages].map(v=>v+'_').join(', ').replace(/_,/g,', ').replace(/_$/,'');
+  else btn.textContent=selStages.size+'件選択中';
+  render();
+}
+// Close dropdown on outside click
+document.addEventListener('click',e=>{
+  const w=document.getElementById('sfWrap');
+  if(w&&!w.contains(e.target))document.getElementById('sfPanel').classList.remove('open');
+});
+
+// === Event type legend filter ===
+const activeEvs=new Set(); // empty = no filter (show all)
+const evFieldMap={
+  naiji:'Naijibi__c', tmpsvy:'TempSurveyDate__c', survey:'SurveyDate__c',
+  delivery:'Field27__c', koji:'KojiSekouyoteibi__c', blackout:'ScheduleOfBlackoutDates__c',
+  kanko:'KojiKankobi__c', start:'StartDate__c'
+};
+function toggleEv(el){
+  const ev=el.dataset.ev;
+  if(activeEvs.has(ev)){activeEvs.delete(ev);el.classList.remove('on');el.classList.add('off');}
+  else{activeEvs.add(ev);el.classList.add('on');el.classList.remove('off');}
+  // If any filter is active, dim inactive ones; if none active, reset all
+  const allFlt=document.querySelectorAll('.legend-item.flt');
+  if(activeEvs.size===0) allFlt.forEach(f=>{f.classList.remove('on','off');});
+  else allFlt.forEach(f=>{if(!activeEvs.has(f.dataset.ev))f.classList.add('off');else f.classList.remove('off');});
+  render();
+}
+function hasActiveEvent(r){
+  // koji is special: check range (着工〜完工)
+  for(const ev of activeEvs){
+    if(ev==='koji'){
+      if(r.KojiSekouyoteibi__c||r.Kankobi__c)return true;
+    } else {
+      const fld=evFieldMap[ev];
+      if(fld&&r[fld])return true;
+    }
+  }
+  return false;
+}
+
 function render(){
-  const sf=document.getElementById('sf').value;
   const si=document.getElementById('si').value.toLowerCase();
   const pf=document.getElementById('pf').value;
   const pfv=document.getElementById('pff').value;
@@ -430,11 +500,12 @@ function render(){
   let f=D.filter(r=>{
     if(si&&!r.Name.toLowerCase().includes(si))return false;
     const s=r.StageName||'';
-    if(sf!=='all'){if(sf==='const'){if(!s.startsWith('08')&&!s.startsWith('09'))return false;}else if(!s.startsWith(sf))return false;}
+    if(selStages.size>0){let match=false;for(const st of selStages){if(s.startsWith(st)){match=true;break;}}if(!match)return false;}
     if(pfv!=='all'&&(r.Prefecture||'')!==pfv)return false;
     if(ctv!=='all'&&(r.ConstractType__c||'')!==ctv)return false;
     if(cuv==='set'&&!r.ConstUserName)return false;
     if(cuv==='none'&&r.ConstUserName)return false;
+    if(activeEvs.size>0&&!hasActiveEvent(r))return false;
     return true;
   });
 
