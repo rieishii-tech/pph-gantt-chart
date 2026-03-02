@@ -758,23 +758,62 @@ function showSyncNotice(){
   setTimeout(function(){ el.style.opacity = '0'; }, 3000);
 }
 
+// ===== GitHub Actions 同期設定 =====
+// このトークンを設定すると、ボタン押下時にSalesforceからデータを再取得します。
+// Fine-grained PAT (Actions: Read and Write 権限のみ) を推奨。
+// 未設定の場合はFirebaseの再読み込みのみ行います。
+const GH_SYNC_TOKEN = '';  // 例: 'github_pat_XXXX...'
+const GH_REPO = 'rieishii-tech/pph-gantt-chart';
+const GH_WORKFLOW = 'refresh-data.yml';
+
 // ===== 手動リフレッシュ（ボタン） =====
 async function refreshData(){
   var btn = document.getElementById('refreshBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spin">&#x21BB;</span> 更新中...';
-  try {
-    await fetchFirebaseData();
-    resetFilters();
-    populateFilters();
-    buildTodayDash();
-    render();
-    btn.innerHTML = '&#x2713; 更新完了';
-    setTimeout(function(){ btn.innerHTML = '&#x21BB; データ更新'; btn.disabled = false; }, 2000);
-  } catch(e){
-    console.error('Refresh error:', e);
-    btn.innerHTML = '&#x26A0; 失敗';
-    setTimeout(function(){ btn.innerHTML = '&#x21BB; データ更新'; btn.disabled = false; }, 3000);
+
+  if(GH_SYNC_TOKEN){
+    // --- GitHub Actions 経由で Salesforce→Firebase 同期を起動 ---
+    btn.innerHTML = '<span class="spin">&#x21BB;</span> Salesforce同期中...';
+    try {
+      var ghRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/actions/workflows/' + GH_WORKFLOW + '/dispatches', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + GH_SYNC_TOKEN,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ref: 'main' })
+      });
+      if(ghRes.status === 204){
+        btn.innerHTML = '&#x23F3; 同期開始...約2分後に自動更新';
+        // SSE が Firebase の変更を検知して自動更新するので待機
+        setTimeout(function(){ btn.innerHTML = '&#x21BB; データ更新'; btn.disabled = false; }, 8000);
+      } else {
+        throw new Error('GitHub Actions起動失敗 (status: ' + ghRes.status + ')');
+      }
+    } catch(e){
+      console.error('GH Actions trigger error:', e);
+      // フォールバック: Firebase再読み込み
+      try { await fetchFirebaseData(); resetFilters(); populateFilters(); buildTodayDash(); render(); } catch(e2){}
+      btn.innerHTML = '&#x26A0; 同期失敗（再読み込み済）';
+      setTimeout(function(){ btn.innerHTML = '&#x21BB; データ更新'; btn.disabled = false; }, 3000);
+    }
+  } else {
+    // --- GitHub Token 未設定: Firebase再読み込みのみ ---
+    btn.innerHTML = '<span class="spin">&#x21BB;</span> 更新中...';
+    try {
+      await fetchFirebaseData();
+      resetFilters();
+      populateFilters();
+      buildTodayDash();
+      render();
+      btn.innerHTML = '&#x2713; 更新完了';
+      setTimeout(function(){ btn.innerHTML = '&#x21BB; データ更新'; btn.disabled = false; }, 2000);
+    } catch(e){
+      console.error('Refresh error:', e);
+      btn.innerHTML = '&#x26A0; 失敗';
+      setTimeout(function(){ btn.innerHTML = '&#x21BB; データ更新'; btn.disabled = false; }, 3000);
+    }
   }
 }
 
