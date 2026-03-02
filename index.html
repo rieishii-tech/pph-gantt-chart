@@ -331,9 +331,17 @@ function buildTodayDash(){
     {f:'KojiKankobi__c',l:'完工検査'},{f:'Kankobi__c',l:'完工'},{f:'StartDate__c',l:'稼働開始'}
   ];
 
+  // ダッシュボードは07以降のステージのみ表示
+  function isStage07plus(stg){
+    if(!stg) return false;
+    const n=stg.substring(0,2);
+    return n>='07' && n<='10';
+  }
+
   let totalCount = 0;
   D.forEach(r => {
     const stg = r.StageName || '';
+    if(!isStage07plus(stg)) return; // 07未満はスキップ
     events.forEach(e => {
       const v = r[e.f];
       if(v && v === todayStr){
@@ -347,7 +355,7 @@ function buildTodayDash(){
       todayItems['着工予定（本日）'].push(r);
       totalCount++;
     }
-    if(kojiStr && kankoStr && todayStr > kojiStr && todayStr < kankoStr
+    if(kojiStr && kankoStr && todayStr >= kojiStr && todayStr <= kankoStr
        && (stg.startsWith('08') || stg.startsWith('09'))){
       todayItems['施工中'].push(r);
       totalCount++;
